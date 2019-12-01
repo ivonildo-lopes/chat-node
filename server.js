@@ -6,20 +6,12 @@ const server = require('http').createServer(app);
 const io = require('socket.io')(server)
 
 app.use(express.static(path.join(__dirname,'public')));
-// app.set('views',path.join(__dirname,'public'));
-// app.engine('html',require('ejs').renderFile);
-// app.set('view engine','html')
-
 
 app.get('/',(req,res) => {
     res.render('/index.html')
 })
 
 let mensagens = [];
-
-// app.get('/',(req,res) => {
-//     res.sendFile('/index.html')
-// })
 
 io.on('connection', socket => {
     // console.log(`socket connectado ${socket.id}`)
@@ -29,19 +21,13 @@ io.on('connection', socket => {
      * 3º envia para todo mundo online
      */
     socket.on('sendMessage', data => {
-        console.log('autor: ' + data.autor + ' mensagem: ' + data.message);
+        // console.log('autor: ' + data.autor + ' mensagem: ' + data.message);
         mensagens.push(data)
         socket.broadcast.emit('exibiMessage', data)
     })
 
     // quando entrar mostrará toda a conversa
     socket.emit('mensagensAntigas', mensagens)
-
-    // socket.on('teste', data => {
-    //     console.log(data);
-    //     socket.emit('tai', "ivonildo Lopes")
-    // })
-
 })
 
 // escultando a porta

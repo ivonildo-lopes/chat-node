@@ -25,6 +25,16 @@
     <script>
         const socket = io('http://localhost:3000');
 
+
+        $(document).ready(function() {
+
+            $("#autor").blur(function event(){
+                console.log("entrou auqi");
+                
+                $("#autor").prop("disabled", true)
+            })
+        })
+
         function renderMessage(message) {
             $('.messages').append('<div class="message">'
                 // + message.data 

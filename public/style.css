@@ -1,5 +1,6 @@
 html, body {
     height: 100%;
+    background-color: rgba(219, 8, 8, 0.479);
   }
   
   * {
@@ -42,6 +43,7 @@ html, body {
     margin: 20px 0;
     border: 1px solid #ddd;
     padding: 20px;
+    background-color: #fff !important;
   }
 
   .message {
