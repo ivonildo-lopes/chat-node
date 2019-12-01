@@ -12,23 +12,86 @@ app.get('/',(req,res) => {
 })
 
 let mensagens = [];
+let usuarios = [];
 
 io.on('connection', socket => {
-    // console.log(`socket connectado ${socket.id}`)
-    /**
-     * 1º ouve a mensagem que vem do frontend
-     * 2º add no array de mensagens
-     * 3º envia para todo mundo online
-     */
-    socket.on('sendMessage', data => {
-        // console.log('autor: ' + data.autor + ' mensagem: ' + data.message);
-        mensagens.push(data)
-        socket.broadcast.emit('exibiMessage', data)
-    })
 
-    // quando entrar mostrará toda a conversa
-    socket.emit('mensagensAntigas', mensagens)
+    // Método de resposta ao evento de entrar
+	socket.on("entrar", function(apelido, callback){
+        console.log('apelido '+ apelido)
+        // console.log('call ' + callback)
+		if(!(apelido in usuarios)){
+			socket.apelido = apelido;
+			usuarios[apelido] = socket; // Adicionadno o nome de usuário a lista armazenada no servidor
+
+			// Enviar para o usuário ingressante as ultimas mensagens armazenadas.
+			for(indice in mensagens){
+				socket.emit("atualizar mensagens", mensagens[indice]);
+			}
+
+            let obj_mensagem = montaMensagem(apelido, " tou na Area", 'sistema' )
+
+			io.sockets.emit("atualizar usuarios", Object.keys(usuarios)); // Enviando a nova lista de usuários
+			io.sockets.emit("atualizar mensagens", obj_mensagem); // Enviando mensagem anunciando entrada do novo usuário
+
+			armazenaMensagem(obj_mensagem); // Guardando a mensagem na lista de histórico
+
+			callback(true);
+		}else{
+			callback(false);
+		}
+	});
+
+	socket.on("enviar mensagem", function(dados, callback){
+		let mensagem_enviada = dados.msg;
+		let usuario = dados.usu;
+		if(usuario == null)
+			usuario = ''; // Caso não tenha um usuário, a mensagem será enviada para todos da sala
+        
+        let obj_mensagem = montaMensagem(socket.apelido, mensagem_enviada, '')
+
+		if(usuario == ''){
+			io.sockets.emit("atualizar mensagens", obj_mensagem);
+			armazenaMensagem(obj_mensagem); // Armazenando a mensagem
+		}else{
+			obj_mensagem.tipo = 'privada';
+			socket.emit("atualizar mensagens", obj_mensagem); // Emitindo a mensagem para o usuário que a enviou
+			usuarios[usuario].emit("atualizar mensagens", obj_mensagem); // Emitindo a mensagem para o usuário escolhido
+		}
+		
+		callback();
+	});
+
+	// socket.on("disconnect", function(){
+	// 	delete usuarios[socket.apelido];
+	// 	let mensagem =  socket.apelido + " saiu da sala";
+	// 	let obj_mensagem = {msg: mensagem, tipo: 'sistema'};
+
+
+	// 	// No caso da saída de um usuário, a lista de usuários é atualizada
+	// 	// junto de um aviso em mensagem para os participantes da sala		
+	// 	io.sockets.emit("atualizar usuarios", Object.keys(usuarios));
+	// 	io.sockets.emit("atualizar mensagens", obj_mensagem);
+
+	// 	armazenaMensagem(obj_mensagem);
+	// });
+   
 })
+
+// Função para guardar as mensagens e seu tipo na variável de ultimas mensagens
+function armazenaMensagem(mensagem){
+	if(mensagens.length > 5){
+		mensagens.shift();
+	}
+	mensagens.push(mensagem);
+}
+
+function montaMensagem(apelido,mensagem,tipo) {
+    mensagem_enviada =  apelido + " diz: " + mensagem;
+    let obj_mensagem = {msg: mensagem_enviada, tipo: tipo};
+    
+    return obj_mensagem;
+}
 
 // escultando a porta
 server.listen(3000, ()=> {
